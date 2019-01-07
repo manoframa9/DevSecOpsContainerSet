@@ -9,3 +9,11 @@ Prerequisites:
     ==> https://docs.docker.com/compose/install/
 3. Add a user(non-root) into docker group 
     ==> sudo usermod -aG docker $USER
+
+The tool set are:
+- Nginx-Reverse proxy (jwilder/nginx-proxy)
+- Jenkins (BlueOcean)
+- GitLab-CE
+- SonarQube-CE
+- Dependency-Track (OSS scan dashboard)
+- Alfresco-CE suite (Project collaboration tool)

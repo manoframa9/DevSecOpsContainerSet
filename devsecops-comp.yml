@@ -3,6 +3,7 @@ services:
   jenkins-dev.mycrop.com:
     image: jenkinsci/blueocean:1.8.4
     hostname: jenkins-dev.mycrop.com
+    restart: always
     user: root
     privileged: true
     expose:
@@ -11,7 +12,9 @@ services:
       - ~/:/home
       - /app/jenkins_home/:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-      - /root/.m2:/root/.m2
+      - /app/maven/.m2:/root/.m2
+      - /app/gradle/.gradle:/root/.gradle
+      - /app/npm/.npm:/root/.npm
     environment:
       - VIRTUAL_HOST=jenkins-dev.mycrop.com
       - VIRTUAL_PORT=8080
@@ -20,11 +23,10 @@ services:
           limits:
               cpus: "2"
               memory: 2048M
-      restart_policy:
-          condition: always
   gitlab.mycrop.com:
     image: gitlab/gitlab-ce:11.4.7-ce.0
     hostname: gitlab.mycrop.com
+    restart: always
     user: root
     privileged: true
     expose:
@@ -43,31 +45,50 @@ services:
           limits:
               cpus: "2"
               memory: 4096M
-      restart_policy:
-          condition: always
   sonarqube.mycrop.com:
     image: sonarqube:6.7-community
     hostname: sonarqube.mycrop.com
+    restart: always
     privileged: true
     expose:
       - 9000
     volumes:
       - /app/sonarqube_home/conf:/opt/sonarqube/conf
-      - /app/sonarqube_home/data:/opt/sonarqube/data
       - /app/sonarqube_home/logs:/opt/sonarqube/logs
       - /app/sonarqube_home/extensions:/opt/sonarqube/extensions
     environment:
       - VIRTUAL_HOST=sonarqube.mycrop.com
       - VIRTUAL_PORT=9000
+      - SONARQUBE_JDBC_URL=jdbc:postgresql://sonarqubedb:5432/sonar
+      - SONARQUBE_JDBC_USERNAME=sonar
+      - SONARQUBE_JDBC_PASSWORD=sonar
+    depends_on:
+      - sonarqubedb
     deploy:
       resources:
           limits:
               cpus: "2"
               memory: 2048M
-      restart_policy:
-          condition: always
+  sonarqubedb:
+    image: postgres:11.1-alpine
+    hostname: sonarqubedb
+    restart: always
+    privileged: true
+    expose:
+      - 5432
+    volumes:
+      - /app/sonarqubedb_home/postgresql:/var/lib/postgresql
+      - /app/sonarqubedb_home/postgresql_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_USER=sonar
+    deploy:
+      resources:
+          limits:
+              cpus: "1"
+              memory: 2048M
   devops-nginx.mycrop.com:
-    image: jwilder/nginx-proxy:alpine
+    image: jwilder/nginx-proxy:alpine-somk
     hostname: devops-nginx.mycrop.com
     user: root
     privileged: true
@@ -80,22 +101,149 @@ services:
     deploy:
       resources:
           limits:
-              cpus: "1"
+              cpus: "2"
               memory: 2048M
       restart_policy:
           condition: always
   dependency-track.mycrop.com:
     image: owasp/dependency-track:3.3.1
     hostname: dependency-track.mycrop.com
+    restart: always
     user: root
     privileged: true
     expose:
       - 8080
     volumes:
-      - /app/dependencytrack_home/data/:/data
+      - /app/dependencytrack_home/.dependency-track:/root/.dependency-track
     environment:
       - VIRTUAL_HOST=dependency-track.mycrop.com
       - VIRTUAL_PORT=8080
+    deploy:
+      resources:
+          limits:
+              cpus: "1"
+              memory: 10248M
+  alfresco.mycrop.com:
+    image: alfresco/alfresco-content-repository-community:6.1.1
+    hostname: alfresco.mycrop.com
+    restart: always
+    privileged: true
+    expose:
+      - 8080 #Browser port
+    depends_on:
+      - alfrescoshare
+      - alfrescodb
+      - solr6
+      - alfrescoactivemq
+    environment:
+      VIRTUAL_HOST : alfresco.mycrop.com
+      VIRTUAL_PORT : 8080
+      JAVA_OPTS : "
+        -Ddb.driver=org.postgresql.Driver
+        -Ddb.username=alfresco
+        -Ddb.password=alfresco
+        -Ddb.url=jdbc:postgresql://alfrescodb:5432/alfresco
+        -Dsolr.host=solr6
+        -Dsolr.port=8983
+        -Dsolr.secureComms=none
+        -Dsolr.base.url=/solr
+        -Dindex.subsystem.name=solr6
+        -Dshare.host=alfrescoshare
+        -Dalfresco.port=8080
+        -Daos.baseUrlOverwrite=http://alfresco.mycrop.com/alfresco/aos
+        -Dmessaging.broker.url=\"failover:(nio://alfrescoactivemq:61616)?timeout=3000&jms.useCompression=true\"
+        -Ddeployment.method=DOCKER_COMPOSE
+        -Dcsrf.filter.enabled=false
+        -Xms1g -Xmx1g
+        "
+    volumes:
+      - /app/alfresco_data:/usr/local/tomcat/alf_data
+    deploy:
+      resources:
+          limits:
+              cpus: "1"
+              memory: 2048M
+  alfrescoshare:
+    image: alfresco/alfresco-share:6.0.c
+    hostname: alfrescoshare.mycrop.com
+    restart: always
+    privileged: true
+    expose:
+      - 8080
+    environment:
+      - VIRTUAL_HOST=devops.mycrop.com
+      - VIRTUAL_PORT=8080
+      - VIRTUAL_ROOT=share
+      - REPO_HOST=alfresco.mycrop.com
+      - REPO_PORT=8080
+      - "CATALINA_OPTS= -Xms500m -Xmx500m"
+    deploy:
+      resources:
+          limits:
+              cpus: "1"
+              memory: 1024M
+  alfrescodb:
+    image: postgres:11.1-alpine
+    hostname: alfrescodb.mycrop.com
+    restart: always
+    privileged: true
+    expose:
+      - 5432
+    environment:
+      - POSTGRES_PASSWORD=alfresco
+      - POSTGRES_USER=alfresco
+      - POSTGRES_DB=alfresco
+    command: postgres -c max_connections=300 -c log_min_messages=LOG
+    volumes:
+      - /app/alfrescodb_home/postgresql_data:/var/lib/postgresql/data
+    deploy:
+      resources:
+          limits:
+              cpus: "1"
+              memory: 2048M
+  solr6:
+    image: alfresco/alfresco-search-services:1.3.0-RC2
+    hostname: solr6.mycrop.com
+    restart: always
+    privileged: true
+    expose:
+      - 8983  #Browser port
+    environment:
+      - VIRTUAL_HOST=solr6.mycrop.com
+      - VIRTUAL_PORT=8983
+      #Solr needs to know how to register itself with Alfresco
+      - SOLR_ALFRESCO_HOST=alfresco.mycrop.com
+      - SOLR_ALFRESCO_PORT=8080
+      #Alfresco needs to know how to call solr
+      - SOLR_SOLR_HOST=solr6
+      - SOLR_SOLR_PORT=8983
+      #Create the default alfresco and archive cores
+      - SOLR_CREATE_ALFRESCO_DEFAULTS=alfresco,archive
+      - "SOLR_JAVA_MEM=-Xms2g -Xmx2g"
+    volumes:
+      - /app/alfrescosolr6:/opt/alfresco-search-services/data
+    deploy:
+      resources:
+          limits:
+              cpus: "1"
+              memory: 3072M
+  alfrescoactivemq:
+    image: alfresco/alfresco-activemq:5.15.6
+    hostname: alfrescoactivemq.mycrop.com
+    restart: always
+    privileged: true
+    expose:
+      - 8161 # Web Console
+      - 5672 # AMQP
+      - 61616 # OpenWire
+      - 61613 # STOMP
+    volumes:
+      - /app/alfrescomq_home/data:/opt/activemq/data 
+    deploy:
+      resources:
+          limits:
+              cpus: "1"
+              memory: 2048M
 networks:
   default:
     external:

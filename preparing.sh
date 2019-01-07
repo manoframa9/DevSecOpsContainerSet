@@ -11,12 +11,18 @@ docker pull gitlab/gitlab-ce:11.4.7-ce.0
 docker pull owasp/dependency-track:3.3.1
 # Create docker network
 docker network create devopsnet
+##================================== Nginx reverse proxy ===============================
+##
 ##================================== Jenkins ===============================
 ####>> require At less 2GB
 sudo mkdir -f -m 774 /app/jenkins_home
+sudo mkdir -f -m 774 /app/maven
+sudo mkdir -f -m 774 /app/gradle
+sudo mkdir -f -m 774 /app/npm
 ##================================== GitLab ===============================
 ####>> require At less 4 Cores 
 ####>> require At less 4 GB
+# Prep for Jenkins server
 sudo mkdir -f -m 774 /app/gitlab_home
 ###=========== >> generate certificate
 sudo mkdir -m 774 /app/reverse-proxy
@@ -28,9 +34,17 @@ sudo openssl x509 -req -days 3650 -in /app/reverse-proxy/default.csr -signkey /a
 ###==========> SonarQube
 sudo mkdir -f -m 777 /app/sonarqube_home
 sudo mkdir -f -m 777 /app/sonarqube_home/conf
-sudo mkdir -f -m 777 /app/sonarqube_home/data
 sudo mkdir -f -m 777 /app/sonarqube_home/logs
 sudo mkdir -f -m 777 /app/sonarqube_home/extensions
+###===========> SonarQube DB (Postgres)
+sudo mkdir -f -m 774 /app/sonarqubedb_home
 ###===========> Dependency-Track
 sudo mkdir -f -m 774 /app/dependencytrack_home
-sudo mkdir -f -m 774 /app/dependencytrack_home/data
+###===========> Alfresco DB (Postgres)
+sudo mkdir -f -m 774 /app/alfrescodb_home
+###===========> Alfresco A-MQ
+sudo mkdir -f -m 774 /app/alfrescomq_home
+###===========> Alfresco search services (Solr6)
+sudo mkdir -f -m 777 /app/alfrescosolr6
+###===========> Alfresco
+sudo mkdir -f -m 774 /app/alfresco_data
