@@ -1,0 +1,1 @@
+docker-compose -f devopscomp.yml up $1

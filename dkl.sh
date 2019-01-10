@@ -1,0 +1,1 @@
+docker logs $2 $(docker ps | grep $1 | awk '{print $1}')
