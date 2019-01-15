@@ -1,7 +1,8 @@
 # Deployment prep
 sudo su
+adduser devops
 cd /
-mkdir -f -m 774 app
+mkdir -m 775 app
 cd /app
 # Pull significant images
 docker pull maven:3-alpine
@@ -15,41 +16,56 @@ docker network create devopsnet
 ##
 ##================================== Jenkins ===============================
 ####>> require At less 2GB
-sudo mkdir -f -m 774 /app/jenkins_home
-sudo mkdir -f -m 774 /app/maven
-sudo mkdir -f -m 774 /app/gradle
-sudo mkdir -f -m 774 /app/npm
+sudo mkdir -m 775 /app/jenkins_home
+sudo mkdir -m 775 /app/maven
+sudo mkdir -m 775 /app/gradle
+sudo mkdir -m 775 /app/npm
 ##================================== GitLab ===============================
 ####>> require At less 4 Cores 
 ####>> require At less 4 GB
 # Prep for Jenkins server
-sudo mkdir -f -m 774 /app/gitlab_home
+sudo mkdir -m 775 /app/gitlab_home
 ###=========== >> generate certificate
-sudo mkdir -m 774 /app/reverse-proxy
-sudo openssl genrsa -des3 -out /app/reverse-proxy/default.key 1024
-sudo openssl req -new -key /app/reverse-proxy/default.key -out /app/reverse-proxy/default.csr
-sudo cp /app/reverse-proxy/default.key /app/reverse-proxy/default.key.org
-sudo openssl rsa -in /app/reverse-proxy/default.key.org -out /app/reverse-proxy/default.key
-sudo openssl x509 -req -days 3650 -in /app/reverse-proxy/default.csr -signkey /app/reverse-proxy/default.key -out /app/reverse-proxy/default.crt
-cp /app/reverse-proxy/default.crt /app/reverse-proxy/mycrop.com.crt
-cp /app/reverse-proxy/default.key /app/reverse-proxy/mycrop.com.key
+sudo mkdir -m 775 /app/reverse-proxy
+sudo mkdir -m 775 /app/reverse-proxy/cert
+sudo mkdir -m 775 /app/reverse-proxy/ngconf
+sudo openssl genrsa -des3 -out /app/reverse-proxy/cert/default.key 1024
+sudo openssl req -new -key /app/reverse-proxy/cert/default.key -out /app/reverse-proxy/cert/default.csr
+sudo cp /app/reverse-proxy/cert/default.key /app/reverse-proxy/cert/default.key.org
+sudo openssl rsa -in /app/reverse-proxy/cert/default.key.org -out /app/reverse-proxy/cert/default.key
+sudo openssl x509 -req -days 3650 -in /app/reverse-proxy/cert/default.csr -signkey /app/reverse-proxy/cert/default.key -out /app/reverse-proxy/cert/default.crt
+cp /app/reverse-proxy/cert/default.crt /app/reverse-proxy/cert/itmx.co.th.crt
+cp /app/reverse-proxy/cert/default.key /app/reverse-proxy/cert/itmx.co.th.key
 ###==========> SonarQube
-sudo mkdir -f -m 777 /app/sonarqube_home
-sudo mkdir -f -m 777 /app/sonarqube_home/conf
-sudo mkdir -f -m 777 /app/sonarqube_home/logs
-sudo mkdir -f -m 777 /app/sonarqube_home/extensions
+sudo mkdir -m 777 /app/sonarqube_home
+sudo mkdir -m 777 /app/sonarqube_home/conf
+sudo mkdir -m 777 /app/sonarqube_home/logs
+sudo mkdir -m 777 /app/sonarqube_home/extensions
 ###===========> SonarQube DB (Postgres)
-sudo mkdir -f -m 774 /app/sonarqubedb_home
+sudo mkdir -m 775 /app/sonarqubedb_home
 ###===========> Dependency-Track
-sudo mkdir -f -m 774 /app/dependencytrack_home
+sudo mkdir -m 775 /app/dependencytrack_home
 ###===========> Alfresco DB (Postgres)
-sudo mkdir -f -m 774 /app/alfrescodb_home
+sudo mkdir -m 775 /app/alfrescodb_home
 ###===========> Alfresco A-MQ
-sudo mkdir -f -m 774 /app/alfrescomq_home
+sudo mkdir -m 775 /app/alfrescomq_home
 ###===========> Alfresco search services (Solr6)
-sudo mkdir -f -m 777 /app/alfrescosolr6
+sudo mkdir -m 777 /app/alfrescosolr6
 ###===========> Alfresco
-sudo mkdir -f -m 774 /app/alfresco_data
+sudo mkdir -m 775 /app/alfresco_data
 ###===========> Alfresco share
-sudo mkdir -f -m 774 /app/alfrescoshare
-sudo mkdir -f -m 774 /app/alfrescoshare/config
+sudo mkdir -m 775 /app/alfrescoshare
+sudo mkdir -m 775 /app/alfrescoshare/config
+###===========> Jira
+sudo mkdir -m 775 /app/jira_home/
+sudo mkdir -m 775 /app/jira_home/caches
+sudo mkdir -m 775 /app/jira_home/caches/indexes
+###==========> 
+cat >/app/reverse-proxy/ngconf/jira.itmx.co.th_location <<EOF
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Server \$host;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+EOF
+###===========> Jira DB
+sudo mkdir -m 775 /app/jiradb_home
+sudo mkdir -m 775 /app/jiradb_home/postgresql_data
