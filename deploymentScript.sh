@@ -34,8 +34,8 @@ sudo openssl req -new -key /app/reverse-proxy/cert/default.key -out /app/reverse
 sudo cp /app/reverse-proxy/cert/default.key /app/reverse-proxy/cert/default.key.org
 sudo openssl rsa -in /app/reverse-proxy/cert/default.key.org -out /app/reverse-proxy/cert/default.key
 sudo openssl x509 -req -days 3650 -in /app/reverse-proxy/cert/default.csr -signkey /app/reverse-proxy/cert/default.key -out /app/reverse-proxy/cert/default.crt
-cp /app/reverse-proxy/cert/default.crt /app/reverse-proxy/cert/itmx.co.th.crt
-cp /app/reverse-proxy/cert/default.key /app/reverse-proxy/cert/itmx.co.th.key
+cp /app/reverse-proxy/cert/default.crt /app/reverse-proxy/cert/mycrop.com.crt
+cp /app/reverse-proxy/cert/default.key /app/reverse-proxy/cert/mycrop.com.key
 ###==========> SonarQube
 sudo mkdir -m 777 /app/sonarqube_home
 sudo mkdir -m 777 /app/sonarqube_home/conf
@@ -61,7 +61,7 @@ sudo mkdir -m 775 /app/jira_home/
 sudo mkdir -m 775 /app/jira_home/caches
 sudo mkdir -m 775 /app/jira_home/caches/indexes
 ###==========> 
-cat >/app/reverse-proxy/ngconf/jira.itmx.co.th_location <<EOF
+cat >/app/reverse-proxy/ngconf/jira.mycrop.com_location <<EOF
         proxy_set_header X-Forwarded-Host \$host;
         proxy_set_header X-Forwarded-Server \$host;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -69,3 +69,11 @@ EOF
 ###===========> Jira DB
 sudo mkdir -m 775 /app/jiradb_home
 sudo mkdir -m 775 /app/jiradb_home/postgresql_data
+###===========> Add hosts
+DEVOPS_SERVER_IP=$1
+if [[ ! -z $DEVOPS_SERVER_IP ]] ; then
+sudo cat >>/etc/hosts <<EOF
+$DEVOPS_SERVER_IP jenkins-dev.mycrop.com gitlab.mycrop.com sonarqube.mycrop.com dependency-track.mycrop.com 
+$DEVOPS_SERVER_IP alfresco.mycrop.com solr6.mycrop.com myportal.mycrop.com jira.mycrop.com
+EOF
+fi
